@@ -23,7 +23,8 @@ export function initUI(h) {
     'screen-start', 'btn-start',
     'screen-story', 'story-tag', 'story-title', 'story-text', 'btn-story-next',
     'screen-class', 'class-title', 'class-hint', 'class-grid',
-    'screen-pause', 'btn-resume', 'btn-restart-pause', 'btn-reclass', 'pause-mute',
+    'screen-pause', 'btn-resume', 'btn-restart-pause', 'btn-reclass', 'pause-mute', 'btn-exit-menu',
+    'screen-settings', 'settings-music', 'settings-sfx', 'settings-sens', 'settings-save', 'settings-close',
     'screen-over', 'over-stats', 'btn-restart',
     'screen-win', 'win-stats', 'btn-freeplay', 'btn-restart-win',
     'btn-mute', 'btn-pause-hud',
@@ -35,6 +36,7 @@ export function initUI(h) {
   el['btn-start'].onclick = () => { initAudio(); S.click(); handlers.start(); };
   el['btn-story-next'].onclick = () => { S.click(); handlers.storyNext(); };
   el['btn-resume'].onclick = () => { S.click(); handlers.resume(); };
+  el['btn-settings-pause'].onclick = () => { S.click(); handlers.showSettings(true); };
   el['btn-restart-pause'].onclick = () => { S.click(); handlers.restart(); };
   el['btn-reclass'].onclick = () => { S.click(); handlers.reclass(); };
   el['btn-restart'].onclick = () => { S.click(); handlers.restart(); };
@@ -43,7 +45,11 @@ export function initUI(h) {
   el['btn-mute'].onclick = () => { initAudio(); toggleMute(); syncMute(); S.click(); };
   el['btn-pause-hud'].onclick = () => { S.click(); handlers.pauseToggle(); };
   el['pause-mute'].onclick = () => { initAudio(); toggleMute(); syncMute(); };
+  el['btn-exit-menu'].onclick = () => { S.click(); handlers.exitToMenu(); };
+  el['settings-save'].onclick = () => { saveSettings(); S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
+  el['settings-close'].onclick = () => { S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
   syncMute();
+  loadSettings();
 }
 
 function syncMute() {
@@ -51,6 +57,32 @@ function syncMute() {
   el['btn-mute'].textContent = m ? 'Звук: выкл' : 'Звук: вкл';
   el['pause-mute'].textContent = m ? 'Включить звук' : 'Выключить звук';
 }
+
+// ---------- настройки ----------
+let settings = { musicVol: 0.5, sfxVol: 0.7, sensitivity: 0.0022 };
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('steel-settings');
+    if (saved) settings = JSON.parse(saved);
+  } catch (e) { /* ignore */ }
+  if (el['settings-music']) el['settings-music'].value = settings.musicVol;
+  if (el['settings-sfx']) el['settings-sfx'].value = settings.sfxVol;
+  if (el['settings-sens']) el['settings-sens'].value = settings.sensitivity;
+}
+
+function saveSettings() {
+  settings.musicVol = el['settings-music']?.value || 0.5;
+  settings.sfxVol = el['settings-sfx']?.value || 0.7;
+  settings.sensitivity = el['settings-sens']?.value || 0.0022;
+  try {
+    localStorage.setItem('steel-settings', JSON.stringify(settings));
+  } catch (e) { /* ignore */ }
+  // Применяем чувствительность
+  if (handlers.updateSensitivity) handlers.updateSensitivity(settings.sensitivity);
+}
+
+export function getSettings() { return settings; }
 
 // ---------- панель статов ----------
 function buildStatRows() {
@@ -142,10 +174,19 @@ export function notify(msg, type = 'info') {
 
 // ---------- экраны ----------
 export function hideAllScreens() {
-  ['screen-start', 'screen-story', 'screen-class', 'screen-pause', 'screen-over', 'screen-win'].forEach((id) => el[id].classList.remove('show'));
+  ['screen-start', 'screen-story', 'screen-class', 'screen-pause', 'screen-over', 'screen-win', 'screen-settings'].forEach((id) => el[id].classList.remove('show'));
 }
+export function hideScreen(id) { el[id].classList.remove('show'); }
 export function showScreen(id) { el[id].classList.add('show'); }
 export function showHUD(on) { el['hud'].classList.toggle('hidden', !on); }
+
+export function showSettings(fromPause = false) {
+  loadSettings();
+  hideAllScreens();
+  showScreen('screen-settings');
+  settingsFromPause = fromPause;
+}
+let settingsFromPause = false;
 
 // ---------- история ----------
 let storyQueue = [];

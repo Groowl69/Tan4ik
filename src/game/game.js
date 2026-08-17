@@ -9,7 +9,7 @@ import {
   updateEnemies, updateEnemyBullets, updateOrbs, updateParticles,
   spawnAtEdge, spawnShape, spawnBoss, damageEnemy, dropXp, burst, clearDynamic,
 } from './entities.js';
-import { initUI, updateHUD, updateBossBar, hideBossBar, showBossWarning, notify, showScreen, hideAllScreens, showHUD, showStory, storyNext, showClassPicker, showGameOver, showWin, drawMinimap } from './ui.js';
+import { initUI, updateHUD, updateBossBar, hideBossBar, showBossWarning, notify, showScreen, hideAllScreens, showHUD, showStory, storyNext, showClassPicker, showGameOver, showWin, drawMinimap, showSettings, getSettings } from './ui.js';
 import { S, initAudio } from './audio.js';
 
 let started = false;
@@ -34,6 +34,7 @@ const input = {
   keys: {}, yaw: 0, pitch: -0.06,
   firing: false, placing: false, boost: false,
   mouseHeld: false, mx: 0, mz: 0,
+  sensitivity: 0.0022,
 };
 
 // ---------- ввод ----------
@@ -71,15 +72,25 @@ function bindInput(canvas) {
   window.addEventListener('mousemove', (e) => {
     const locked = document.pointerLockElement === canvas;
     if (locked || input.mouseHeld) {
-      input.yaw -= (e.movementX || 0) * 0.0022;
-      input.pitch = clamp(input.pitch - (e.movementY || 0) * 0.0022, -0.5, 0.42);
+      input.yaw -= (e.movementX || 0) * input.sensitivity;
+      input.pitch = clamp(input.pitch - (e.movementY || 0) * input.sensitivity, -0.5, 0.42);
+    } else {
+      // Когда курсор не захвачен, поворачиваем танк за курсором мыши
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const targetYaw = Math.atan2(dx, dy);
+      const targetPitch = clamp(-dy / (rect.height / 2), -0.5, 0.42) * 0.5;
+      input.yaw += (targetYaw - input.yaw) * 0.15;
+      input.pitch += (targetPitch - input.pitch) * 0.15;
     }
   });
 
   document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && (G.state === 'playing' || G.state === 'free')) {
-      pauseGame();
-    }
+    // Не ставим на паузу при выходе из pointer lock, если мы в игре
+    // Пауза теперь только по Esc/P
   });
 
   input.boostRef = () => input.keys['ShiftLeft'] || input.keys['ShiftRight'];
@@ -103,6 +114,18 @@ function resumeGame() {
   hideAllScreens();
   G.state = G.prevState || 'playing';
   lockPointer();
+}
+function exitToMenu() {
+  G.state = 'menu';
+  clearDynamic();
+  resetPlayer();
+  playerRef.x = 0; playerRef.z = 30;
+  playerRef.mesh.position.set(0, 0, 30);
+  input.yaw = 0; input.pitch = -0.06;
+  if (document.pointerLockElement) document.exitPointerLock();
+  hideAllScreens();
+  showHUD(false);
+  showScreen('screen-start');
 }
 
 function startCampaign() {
@@ -462,6 +485,16 @@ export function startGame(canvas) {
     },
     upgrade: (key) => { upgradeStat(key); },
     pauseToggle: () => { if (G.state === 'paused') resumeGame(); else pauseGame(); },
+    exitToMenu: () => { S.click(); exitToMenu(); },
+    showSettings: (fromPause) => { showSettings(fromPause); },
+    resumeFromSettings: () => {
+      if (G.state === 'paused') {
+        // остаемся в паузе
+      } else {
+        resumeGame();
+      }
+    },
+    updateSensitivity: (sens) => { input.sensitivity = sens; },
   });
 
   // режим меню: танк в центре, фигуры бродят
