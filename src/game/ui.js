@@ -23,7 +23,7 @@ export function initUI(h) {
     'screen-start', 'btn-start',
     'screen-story', 'story-tag', 'story-title', 'story-text', 'btn-story-next',
     'screen-class', 'class-title', 'class-hint', 'class-grid',
-    'screen-pause', 'btn-resume', 'btn-restart-pause', 'btn-reclass', 'pause-mute', 'btn-exit-menu',
+    'screen-pause', 'btn-resume', 'btn-restart-pause', 'btn-reclass', 'pause-mute', 'btn-exit-menu', 'btn-settings-pause',
     'screen-settings', 'settings-music', 'settings-sfx', 'settings-sens', 'settings-save', 'settings-close',
     'screen-over', 'over-stats', 'btn-restart',
     'screen-win', 'win-stats', 'btn-freeplay', 'btn-restart-win',
