@@ -476,6 +476,64 @@ button { font-family: inherit; cursor: pointer; }
 .end-row b { color: var(--amber); font-family: var(--font-d); font-size: 14.5px; letter-spacing: 0.04em; }
 .end-btns { display: flex; flex-direction: column; gap: 10px; }
 
+/* ---------- настройки ---------- */
+.settings-card {
+  width: min(460px, 92vw);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  clip-path: var(--cut);
+  padding: 30px 30px 32px;
+  text-align: left;
+  animation: cardUp 0.35s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.settings-title {
+  font-family: var(--font-d);
+  font-size: 28px;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 22px;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  gap: 16px;
+}
+.settings-row label {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  min-width: 160px;
+}
+.settings-row input[type="range"] {
+  flex: 1;
+  height: 6px;
+  background: #1a2438;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+.settings-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--amber);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(255, 199, 107, 0.6);
+}
+.settings-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+.settings-actions .btn-primary,
+.settings-actions .btn-ghost {
+  flex: 1;
+}
+
 /* ---------- адаптив ---------- */
 @media (max-width: 900px) {
   .start-grid { grid-template-columns: 1fr; gap: 26px; }

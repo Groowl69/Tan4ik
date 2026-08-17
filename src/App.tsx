@@ -58,7 +58,7 @@ export default function App() {
         </div>
 
         <div id="hud-bottom">
-          <div id="bl-cluster">
+          <div id="bl-cluster" style={{ marginLeft: '40px' }}>
             <div id="level-badge">1</div>
             <div id="bl-bars">
               <div id="hp-bar"><div id="hp-fill" /><span id="hp-text">100 / 100</span></div>
@@ -142,9 +142,34 @@ export default function App() {
           <h2 className="pause-title">Пауза</h2>
           <p className="pause-sub">Машина стоит, реактор гудит</p>
           <button id="btn-resume" className="btn-primary">Вернуться в бой</button>
+          <button id="btn-settings-pause" className="btn-ghost">Настройки</button>
           <button id="btn-reclass" className="btn-ghost">Эволюция танка</button>
+          <button id="btn-exit-menu" className="btn-ghost danger">Выйти в меню</button>
           <button id="pause-mute" className="btn-ghost">Выключить звук</button>
           <button id="btn-restart-pause" className="btn-ghost danger">Начать заново</button>
+        </div>
+      </div>
+
+      {/* ======= Настройки ======= */}
+      <div id="screen-settings" className="screen">
+        <div className="settings-card">
+          <h2 className="settings-title">Настройки</h2>
+          <div className="settings-row">
+            <label htmlFor="settings-music">Громкость музыки</label>
+            <input type="range" id="settings-music" min="0" max="1" step="0.05" defaultValue="0.5" />
+          </div>
+          <div className="settings-row">
+            <label htmlFor="settings-sfx">Громкость эффектов</label>
+            <input type="range" id="settings-sfx" min="0" max="1" step="0.05" defaultValue="0.7" />
+          </div>
+          <div className="settings-row">
+            <label htmlFor="settings-sens">Чувствительность камеры</label>
+            <input type="range" id="settings-sens" min="0.001" max="0.01" step="0.0005" defaultValue="0.0022" />
+          </div>
+          <div className="settings-actions">
+            <button id="settings-save" className="btn-primary">Сохранить</button>
+            <button id="settings-close" className="btn-ghost">Закрыть</button>
+          </div>
         </div>
       </div>
 
