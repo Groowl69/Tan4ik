@@ -1,18 +1,23 @@
-```
 # Dependencies
 node_modules/
 
-# Build artifacts
-dist/
-build/
+# Build output and generated bundles
+/dist/
+/build/
 *.bundle.js
 *.min.js
 *.map
 
-# Environment variables
+# Local environment files
 .env
-.env.local
 .env.*
+!.env.example
+
+# Logs and coverage
+*.log
+coverage/
+htmlcov/
+.coverage
 
 # IDE and editor files
 .vscode/
@@ -21,33 +26,25 @@ build/
 *.swo
 *.tmp
 
-# Logs
-*.log
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# System files
+# OS files
 .DS_Store
 Thumbs.db
 
-# Python
+# Python artifacts
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 .Python
-env/
-venv/
 .venv/
+venv/
+env/
 
-# Compressed files
+# Archives and packages
 *.zip
+*.tar
 *.tar.gz
 *.tar.bz2
 *.tar.xz
+*.tgz
 *.gz
 *.bz2
 *.xz
@@ -63,7 +60,3 @@ venv/
 *.Z
 *.lz
 *.lzo
-*.tar
-*.tgz
-
-```

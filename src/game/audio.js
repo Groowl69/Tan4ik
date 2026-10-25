@@ -4,29 +4,40 @@
 let ctx = null;
 let master = null;
 let muted = false;
+let sfxVolume = 1;
 let lastEshoot = -1;
+
+function applyMasterVolume() {
+  if (master) master.gain.value = muted ? 0 : 0.32 * sfxVolume;
+}
 
 export function initAudio() {
   if (!ctx) {
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
-      master.gain.value = 0.32;
+      applyMasterVolume();
       master.connect(ctx.destination);
     } catch (e) { ctx = null; }
   }
   if (ctx && ctx.state === 'suspended') ctx.resume();
 }
 
+export function setSfxVolume(value) {
+  const parsed = Number(value);
+  sfxVolume = Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 1;
+  applyMasterVolume();
+}
+
 export function toggleMute() {
   muted = !muted;
-  if (master) master.gain.value = muted ? 0 : 0.32;
+  applyMasterVolume();
   return muted;
 }
 export const isMuted = () => muted;
 
 function tone(freq, dur, type = 'square', vol = 0.5, slideTo = null, delay = 0) {
-  if (!ctx || muted) return;
+  if (!ctx || muted || sfxVolume === 0) return;
   const t0 = ctx.currentTime + delay;
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
@@ -41,7 +52,7 @@ function tone(freq, dur, type = 'square', vol = 0.5, slideTo = null, delay = 0) 
 }
 
 function noise(dur, vol = 0.4, freq = 1200, delay = 0) {
-  if (!ctx || muted) return;
+  if (!ctx || muted || sfxVolume === 0) return;
   const t0 = ctx.currentTime + delay;
   const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -61,7 +72,6 @@ function noise(dur, vol = 0.4, freq = 1200, delay = 0) {
 
 // ---- игровые события ----
 export const S = {
-  // pitch: 0 = огромный снаряд, 1 = обычный
   shoot(pitch = 0.5) {
     const f = 140 + pitch * 480;
     tone(f, 0.07 + (1 - pitch) * 0.08, 'square', 0.16, f * 0.5);
