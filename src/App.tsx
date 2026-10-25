@@ -155,8 +155,8 @@ export default function App() {
         <div className="settings-card">
           <h2 className="settings-title">Настройки</h2>
           <div className="settings-row">
-            <label htmlFor="settings-music">Громкость музыки</label>
-            <input type="range" id="settings-music" min="0" max="1" step="0.05" defaultValue="0.5" />
+            <label htmlFor="settings-music">Громкость музыки (пока не используется)</label>
+            <input type="range" id="settings-music" min="0" max="1" step="0.05" defaultValue="0.5" disabled />
           </div>
           <div className="settings-row">
             <label htmlFor="settings-sfx">Громкость эффектов</label>

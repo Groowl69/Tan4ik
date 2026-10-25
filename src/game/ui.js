@@ -3,7 +3,7 @@
 // ============================================================
 import { STATS, MAX_STAT, CHAPTERS, xpNeed } from './config.js';
 import { tankSVG } from './tanks.js';
-import { toggleMute, isMuted, S, initAudio } from './audio.js';
+import { toggleMute, isMuted, S, initAudio, setSfxVolume } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const el = {};
@@ -61,20 +61,36 @@ function syncMute() {
 // ---------- настройки ----------
 let settings = { musicVol: 0.5, sfxVol: 0.7, sensitivity: 0.0022 };
 
+function normalizeSettings(value) {
+  const numberInRange = (candidate, fallback, min, max) => {
+    const number = Number(candidate);
+    return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+  };
+  return {
+    musicVol: numberInRange(value?.musicVol, 0.5, 0, 1),
+    sfxVol: numberInRange(value?.sfxVol, 0.7, 0, 1),
+    sensitivity: numberInRange(value?.sensitivity, 0.0022, 0.001, 0.01),
+  };
+}
+
 function loadSettings() {
   try {
     const saved = localStorage.getItem('steel-settings');
-    if (saved) settings = JSON.parse(saved);
+    if (saved) settings = normalizeSettings(JSON.parse(saved));
   } catch (e) { /* ignore */ }
   if (el['settings-music']) el['settings-music'].value = settings.musicVol;
   if (el['settings-sfx']) el['settings-sfx'].value = settings.sfxVol;
   if (el['settings-sens']) el['settings-sens'].value = settings.sensitivity;
+  setSfxVolume(settings.sfxVol);
 }
 
 function saveSettings() {
-  settings.musicVol = el['settings-music']?.value || 0.5;
-  settings.sfxVol = el['settings-sfx']?.value || 0.7;
-  settings.sensitivity = el['settings-sens']?.value || 0.0022;
+  settings = normalizeSettings({
+    musicVol: el['settings-music']?.value,
+    sfxVol: el['settings-sfx']?.value,
+    sensitivity: el['settings-sens']?.value,
+  });
+  setSfxVolume(settings.sfxVol);
   try {
     localStorage.setItem('steel-settings', JSON.stringify(settings));
   } catch (e) { /* ignore */ }
