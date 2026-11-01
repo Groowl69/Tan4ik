@@ -27,6 +27,24 @@ function stdMat(color, opts = {}) {
   });
 }
 
+function paintMat(paint, opts = {}) {
+  const material = stdMat(paint.color, opts);
+  if (paint.gradient) {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.tankGradientA = { value: new THREE.Color(paint.gradient[0]) };
+      shader.uniforms.tankGradientB = { value: new THREE.Color(paint.gradient[1]) };
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\\nvarying float vTankGradient;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\\nvTankGradient = position.x;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\\nuniform vec3 tankGradientA;\\nuniform vec3 tankGradientB;\\nvarying float vTankGradient;')
+        .replace('#include <color_fragment>', '#include <color_fragment>\\ndiffuseColor.rgb *= mix(tankGradientA, tankGradientB, smoothstep(-1.0, 1.0, vTankGradient));');
+    };
+    material.customProgramCacheKey = () => 'tank-gradient-v1';
+  }
+  return material;
+}
+
 // --- Собирает корпус + башню по классу. Возвращает { group, turret, barrels }
 export function buildTankMesh(cls, tierOverride = null, customization = getCustomization()) {
   const tier = tierOverride || cls.tier;
@@ -48,14 +66,14 @@ export function buildTankMesh(cls, tierOverride = null, customization = getCusto
           : customization.body === 'ring'
             ? new THREE.TorusGeometry(bodySize * 0.42, bodySize * 0.15, 12, 32)
             : new THREE.BoxGeometry(bodySize, 0.85, bodySize);
-  const body = new THREE.Mesh(bodyGeometry, stdMat(colors.body));
+  const body = new THREE.Mesh(bodyGeometry, paintMat(paint));
   body.position.y = 0.55;
   body.castShadow = true;
   group.add(body);
 
   const plate = new THREE.Mesh(
     new THREE.BoxGeometry(bodySize * 0.8, 0.14, bodySize * 0.8),
-    stdMat(colors.turret)
+    paintMat(paint)
   );
   plate.position.y = 1.02;
   if (customization.body !== 'rectangle') {
@@ -117,7 +135,7 @@ export function buildViewModel(cls, customization = getCustomization()) {
   for (const b of cls.barrels) {
     const radius = Math.min(0.5, 0.24 * b.w);
     const len = 2.6 * b.l * (customization.barrel === 'short' ? 0.6 : 1);
-    const mesh = new THREE.Mesh(barrelGeo(radius, len), stdMat(colors.turret, { roughness: 0.45 }));
+    const mesh = new THREE.Mesh(barrelGeo(radius, len), paintMat(paint, { roughness: 0.45 }));
     const baseZ = -len / 2 - 0.1;
     if (customization.barrel === 'broken') {
       const fracture = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.88, 0.045, 5, 10), stdMat(0x17191d));
