@@ -105,7 +105,8 @@ export default function App() {
               <div className="ctl"><kbd>Shift</kbd><span>форсаж (тратит энергию)</span></div>
               <div className="ctl"><kbd>ПКМ</kbd><span>мины (для Инженера)</span></div>
               <div className="ctl"><kbd>1–7</kbd><span>прокачка систем</span></div>
-              <div className="ctl"><kbd>Esc / P</kbd><span>пауза и эволюция</span></div>
+              <div className="ctl"><kbd>Esc / P</kbd><span>пауза</span></div>
+              <div className="ctl"><kbd>Эволюция</kbd><span>кнопка появится на игровом экране при достижении уровня</span></div>
             </div>
             <div className="side-panel">
               <div className="side-head">Досье на цели</div>
