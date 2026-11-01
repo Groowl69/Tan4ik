@@ -17,6 +17,8 @@ let started = false;
 function lockPointer() {
   const canvas = W.renderer?.domElement;
   if (!canvas || document.pointerLockElement === canvas || input.ctrlFree) return;
+  input.lockExitX = Number.isFinite(input.cursorX) ? input.cursorX : window.innerWidth / 2;
+  input.lockExitY = Number.isFinite(input.cursorY) ? input.cursorY : window.innerHeight / 2;
   try {
     const request = canvas.requestPointerLock();
     if (request && request.catch) request.catch(() => { /* остаётся управление по координатам курсора */ });
@@ -39,6 +41,7 @@ function resetAimAnchor() {
 
 function enterStory(chapter, onDone) {
   G.state = 'story';
+  document.documentElement.classList.remove('aim-active');
   if (document.pointerLockElement) document.exitPointerLock();
   W.camera.position.set(playerRef.x, 2.5, playerRef.z);
   W.camera.rotation.set(input.pitch, input.yaw + Math.PI, 0);
@@ -59,6 +62,7 @@ const input = {
   firing: false, placing: false, boost: false,
   ctrlFree: false, cursorX: null, cursorY: null,
   aimAnchorX: null, aimAnchorY: null, aimAnchorYaw: 0, aimAnchorPitch: -0.06,
+  lockExitX: null, lockExitY: null,
   mx: 0, mz: 0,
   sensitivity: 0.0022,
 };
@@ -74,6 +78,7 @@ function bindInput(canvas) {
     input.keys[e.code] = true;
     if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && !input.ctrlFree) {
       input.ctrlFree = true;
+      document.documentElement.classList.remove('aim-active');
       document.documentElement.classList.add('cursor-free');
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       else resetAimAnchor();
@@ -93,8 +98,13 @@ function bindInput(canvas) {
     if (e.code === 'ControlLeft' || e.code === 'ControlRight') {
       input.ctrlFree = false;
       document.documentElement.classList.remove('cursor-free');
-      resetAimAnchor();
-      if (G.state === 'playing' || G.state === 'free') lockPointer();
+      if (G.state === 'playing' || G.state === 'free') {
+        document.documentElement.classList.add('aim-active');
+        resetAimAnchor();
+        lockPointer();
+      } else {
+        resetAimAnchor();
+      }
     }
   });
 
@@ -138,9 +148,8 @@ function bindInput(canvas) {
 
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement !== canvas) {
-      const bounds = canvas.getBoundingClientRect();
-      input.cursorX = bounds.left + bounds.width / 2;
-      input.cursorY = bounds.top + bounds.height / 2;
+      if (Number.isFinite(input.lockExitX)) input.cursorX = input.lockExitX;
+      if (Number.isFinite(input.lockExitY)) input.cursorY = input.lockExitY;
       resetAimAnchor();
     }
   });
@@ -158,6 +167,7 @@ function pauseGame() {
   if (G.state !== 'playing' && G.state !== 'free') return;
   G.prevState = G.state;
   G.state = 'paused';
+  document.documentElement.classList.remove('aim-active');
   if (document.pointerLockElement) document.exitPointerLock();
   showScreen('screen-pause');
 }
@@ -165,10 +175,12 @@ function resumeGame() {
   if (G.state !== 'paused') return;
   hideAllScreens();
   G.state = G.prevState || 'playing';
+  if (!input.ctrlFree) document.documentElement.classList.add('aim-active');
   lockPointer();
 }
 function exitToMenu() {
   G.state = 'menu';
+  document.documentElement.classList.remove('aim-active', 'cursor-free');
   clearDynamic();
   resetPlayer();
   playerRef.x = 0; playerRef.z = 30;
@@ -198,6 +210,7 @@ function startCampaign() {
 function beginChapter() {
   G.waveIdx = 0;
   G.state = 'playing';
+  if (!input.ctrlFree) document.documentElement.classList.add('aim-active');
   resetAimAnchor();
   lockPointer();
   notify(`${CHAPTERS[G.chapterIdx].tag}: ${CHAPTERS[G.chapterIdx].title}`, 'chapter');
@@ -259,6 +272,7 @@ const ctx = {
   },
   onDeath() {
     G.state = 'over';
+    document.documentElement.classList.remove('aim-active');
     S.over();
     if (document.pointerLockElement) document.exitPointerLock();
     saveBest();
@@ -380,6 +394,7 @@ function offerClassChoice(forceTier = null) {
   }
   const wasState = G.state;
   G.state = 'paused';
+  document.documentElement.classList.remove('aim-active');
   if (document.pointerLockElement) document.exitPointerLock();
   showClassPicker(options, title, hint, (id) => {
     playerRef.applyClassFn(id);
@@ -392,7 +407,10 @@ function offerClassChoice(forceTier = null) {
     } else {
       G.evolutionTier = 0;
       G.state = wasState === 'paused' ? 'playing' : wasState;
-      if (G.state === 'playing' || G.state === 'free') lockPointer();
+      if (G.state === 'playing' || G.state === 'free') {
+        if (!input.ctrlFree) document.documentElement.classList.add('aim-active');
+        lockPointer();
+      }
     }
   });
 }
@@ -457,6 +475,7 @@ function frame(t) {
           if (G.chapterIdx >= CHAPTERS.length - 1) {
             // победа
             G.state = 'win';
+            document.documentElement.classList.remove('aim-active');
             S.win();
             saveBest();
             if (document.pointerLockElement) document.exitPointerLock();
@@ -537,6 +556,7 @@ export function startGame(canvas) {
       hideAllScreens();
       showHUD(true);
       G.state = 'free';
+      if (!input.ctrlFree) document.documentElement.classList.add('aim-active');
       G.endlessLvl = 0;
       resetAimAnchor();
       lockPointer();
