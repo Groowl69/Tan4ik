@@ -94,6 +94,7 @@ export default function App() {
               <span><b>30</b> эволюций танка</span>
             </div>
             <button id="btn-start" className="btn-primary">Начать зачистку</button>
+            <button id="btn-customize-open" className="btn-ghost start-settings">Настройки</button>
             <div className="start-hint">Мышь — наведение · Ctrl — свободный курсор · Esc — пауза</div>
           </div>
           <div className="start-side">
@@ -116,6 +117,37 @@ export default function App() {
               <div className="foe"><i style={{ background: "#6f8bff" }} /><span>Пентагон — тяжёлая броня</span></div>
               <div className="foe"><i style={{ background: "#b06bff" }} /><span>Гексагон — ходячий склад XP</span></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ======= Косметика танка ======= */}
+      <div id="screen-customize" className="screen">
+        <div className="settings-card customize-card">
+          <h2 className="settings-title">Настройки танка</h2>
+          <div className="custom-row">
+            <div className="custom-label">Форма корпуса</div>
+            <div className="custom-carousel">
+              <button id="body-prev" className="btn-ghost custom-arrow">‹</button>
+              <span id="body-value" />
+              <button id="body-next" className="btn-ghost custom-arrow">›</button>
+            </div>
+          </div>
+          <div className="custom-row">
+            <div className="custom-label">Форма ствола</div>
+            <div className="custom-carousel">
+              <button id="barrel-prev" className="btn-ghost custom-arrow">‹</button>
+              <span id="barrel-value" />
+              <button id="barrel-next" className="btn-ghost custom-arrow">›</button>
+            </div>
+          </div>
+          <div className="custom-row paint-row">
+            <div className="custom-label">Цвет танка</div>
+            <div id="paint-options" className="paint-options" />
+          </div>
+          <div className="settings-actions">
+            <button id="customize-back" className="btn-primary">Сохранить</button>
+            <button id="customize-cancel" className="btn-ghost">Назад</button>
           </div>
         </div>
       </div>
