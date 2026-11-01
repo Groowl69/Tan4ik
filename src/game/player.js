@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { CLASSES, getClassById, ARENA, MAX_LEVEL, MAX_STAT, clamp, xpNeed, rand } from './config.js';
 import { W, glowTexture } from './world.js';
 import { buildTankMesh, buildViewModel } from './tanks.js';
+import { getCustomization } from './customization.js';
 import { S } from './audio.js';
 import { enemies, damageEnemy, burst } from './entities.js';
 
@@ -67,7 +68,9 @@ export function applyClass(id, silent = false) {
 
   // корпус в мире
   if (P.mesh) W.scene.remove(P.mesh);
-  const built = buildTankMesh(cls);
+  const customization = getCustomization();
+  const built = buildTankMesh(cls, null, customization);
+  P.radius = customization.body === 'ring' ? 1.45 : customization.body === 'cylinder' ? 1.35 : customization.body === 'triangle' ? 1.5 : customization.body === 'hexagon' || customization.body === 'octagon' ? 1.48 : 1.5;
   P.mesh = built.group;
   P.turret = built.turret;
   P.barrels = built.barrels;
@@ -76,7 +79,7 @@ export function applyClass(id, silent = false) {
 
   // стволы от первого лица
   if (P.vm) W.camera.remove(P.vm);
-  const vmBuilt = buildViewModel(cls);
+  const vmBuilt = buildViewModel(cls, customization);
   P.vm = vmBuilt.vm;
   P.vmBarrels = vmBuilt.barrels;
   W.camera.add(P.vm);
