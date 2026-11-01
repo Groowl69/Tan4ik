@@ -541,3 +541,8 @@ button { font-family: inherit; cursor: pointer; }
   #minimap-wrap { display: none; }
   #bl-bars { width: 210px; }
 }
+
+
+/* Во время прицеливания указатель скрыт; Ctrl временно возвращает системный курсор. */
+html.aim-active #game-canvas { cursor: none; }
+html.cursor-free #game-canvas { cursor: default; }
