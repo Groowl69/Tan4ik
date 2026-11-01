@@ -195,6 +195,8 @@ function exitToMenu() {
 }
 
 function startCampaign() {
+  input.ctrlFree = false;
+  document.documentElement.classList.remove('aim-active', 'cursor-free');
   clearDynamic();
   resetPlayer();
   G.chapterIdx = 0; G.waveIdx = 0;
