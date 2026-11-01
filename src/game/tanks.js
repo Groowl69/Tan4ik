@@ -28,7 +28,7 @@ function stdMat(color, opts = {}) {
 }
 
 function paintMat(paint, opts = {}) {
-  const material = stdMat(paint.color, opts);
+  const material = stdMat(paint.gradient ? 0xffffff : paint.color, opts);
   if (paint.gradient) {
     material.onBeforeCompile = (shader) => {
       shader.uniforms.tankGradientA = { value: new THREE.Color(paint.gradient[0]) };
