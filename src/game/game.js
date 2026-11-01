@@ -88,8 +88,17 @@ function bindInput(canvas) {
       if (n >= 1 && n <= 7) tryUpgrade(n - 1);
     }
     if (e.code === 'KeyP' || e.code === 'Escape') {
-      if (G.state === 'playing' || G.state === 'free') pauseGame();
-      else if (G.state === 'paused') resumeGame();
+      e.preventDefault();
+      e.stopPropagation();
+      if (G.state === 'playing' || G.state === 'free') {
+        pauseGame();
+        // Escape не должен сначала только закрывать fullscreen, оставляя игру активной.
+        if (e.code === 'Escape' && document.fullscreenElement) {
+          document.exitFullscreen?.().catch?.(() => {});
+        }
+      } else if (G.state === 'paused') {
+        resumeGame();
+      }
     }
     if (e.code === 'Space') e.preventDefault();
   });
@@ -146,6 +155,11 @@ function bindInput(canvas) {
     }
   });
 
+  document.addEventListener('fullscreenchange', () => {
+    // Браузер может перехватить Escape для выхода из fullscreen раньше игрового обработчика.
+    if (!document.fullscreenElement && (G.state === 'playing' || G.state === 'free')) pauseGame();
+  });
+
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement !== canvas) {
       if (Number.isFinite(input.lockExitX)) input.cursorX = input.lockExitX;
@@ -173,10 +187,12 @@ function pauseGame() {
 }
 function resumeGame() {
   if (G.state !== 'paused') return;
-  hideAllScreens();
   G.state = G.prevState || 'playing';
-  if (!input.ctrlFree) document.documentElement.classList.add('aim-active');
-  lockPointer();
+  hideAllScreens();
+  document.documentElement.classList.toggle('aim-active', !input.ctrlFree);
+  if (!input.ctrlFree) lockPointer();
+  input.firing = false;
+  input.placing = false;
 }
 function exitToMenu() {
   G.state = 'menu';
@@ -568,12 +584,12 @@ export function startGame(canvas) {
     pauseToggle: () => { if (G.state === 'paused') resumeGame(); else pauseGame(); },
     exitToMenu: () => { S.click(); exitToMenu(); },
     showSettings: (fromPause) => { showSettings(fromPause); },
-    resumeFromSettings: () => {
-      if (G.state === 'paused') {
-        // остаемся в паузе
-      } else {
-        resumeGame();
+    resumeFromSettings: (fromPause) => {
+      if (fromPause && G.state === 'paused') {
+        showScreen('screen-pause');
+        return;
       }
+      if (G.state === 'paused') resumeGame();
     },
     updateSensitivity: (sens) => { input.sensitivity = sens; },
   });
