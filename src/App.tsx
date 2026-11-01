@@ -29,6 +29,7 @@ export default function App() {
         </div>
 
         <div id="hud-tr" className="hud-block">
+          <button id="btn-evolve" className="hud-btn" style={{ display: "none" }}>Эволюция танка</button>
           <button id="btn-mute" className="hud-btn">Звук: вкл</button>
           <button id="btn-pause-hud" className="hud-btn">Пауза [Esc]</button>
         </div>
@@ -93,17 +94,19 @@ export default function App() {
               <span><b>30</b> эволюций танка</span>
             </div>
             <button id="btn-start" className="btn-primary">Начать зачистку</button>
-            <div className="start-hint">Клик по арене захватывает мышь · Esc — пауза</div>
+            <div className="start-hint">Мышь — наведение · Ctrl — свободный курсор · Esc — пауза</div>
           </div>
           <div className="start-side">
             <div className="side-panel">
               <div className="side-head">Боевой устав</div>
               <div className="ctl"><kbd>W A S D</kbd><span>движение</span></div>
               <div className="ctl"><kbd>Мышь</kbd><span>наведение · ЛКМ — огонь</span></div>
+              <div className="ctl"><kbd>Ctrl</kbd><span>свободный курсор (удерживать)</span></div>
               <div className="ctl"><kbd>Shift</kbd><span>форсаж (тратит энергию)</span></div>
               <div className="ctl"><kbd>ПКМ</kbd><span>мины (для Инженера)</span></div>
               <div className="ctl"><kbd>1–7</kbd><span>прокачка систем</span></div>
-              <div className="ctl"><kbd>Esc / P</kbd><span>пауза и эволюция</span></div>
+              <div className="ctl"><kbd>Esc / P</kbd><span>пауза</span></div>
+              <div className="ctl"><kbd>Эволюция</kbd><span>кнопка появится на игровом экране при достижении уровня</span></div>
             </div>
             <div className="side-panel">
               <div className="side-head">Досье на цели</div>
@@ -143,10 +146,7 @@ export default function App() {
           <p className="pause-sub">Машина стоит, реактор гудит</p>
           <button id="btn-resume" className="btn-primary">Вернуться в бой</button>
           <button id="btn-settings-pause" className="btn-ghost">Настройки</button>
-          <button id="btn-reclass" className="btn-ghost">Эволюция танка</button>
           <button id="btn-exit-menu" className="btn-ghost danger">Выйти в меню</button>
-          <button id="pause-mute" className="btn-ghost">Выключить звук</button>
-          <button id="btn-restart-pause" className="btn-ghost danger">Начать заново</button>
         </div>
       </div>
 
