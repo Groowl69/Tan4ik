@@ -45,8 +45,12 @@ export function initUI(h) {
   el['btn-pause-hud'].onclick = () => { S.click(); handlers.pauseToggle(); };
 
   el['btn-exit-menu'].onclick = () => { S.click(); handlers.exitToMenu(); };
-  el['settings-save'].onclick = () => { saveSettings(); S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
-  el['settings-close'].onclick = () => { S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
+  const closeSettings = () => {
+    hideScreen('screen-settings');
+    if (handlers.resumeFromSettings) handlers.resumeFromSettings(settingsFromPause);
+  };
+  el['settings-save'].onclick = () => { saveSettings(); S.click(); closeSettings(); };
+  el['settings-close'].onclick = () => { S.click(); closeSettings(); };
   syncMute();
   loadSettings();
 }
