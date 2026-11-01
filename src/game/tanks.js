@@ -76,34 +76,9 @@ export function buildTankMesh(cls, tierOverride = null) {
   dome.position.y = 0.12;
   turret.add(dome);
 
+  // Стволы отображаются только в модели от первого лица (buildViewModel).
+  // В мировом корпусе оставляем башню без неподвижной дублирующей пушки.
   const barrels = [];
-  for (const b of cls.barrels) {
-    const radius = Math.min(0.62, 0.30 * b.w);
-    const len = 2.1 * b.l;
-    const mesh = new THREE.Mesh(barrelGeo(radius, len), stdMat(colors.turret));
-    mesh.castShadow = true;
-    const baseZ = len / 2 - 0.25;
-    mesh.position.set(b.off || 0, 0.42, baseZ);
-    const holder = new THREE.Group();
-    holder.rotation.y = -THREE.MathUtils.degToRad(b.a);
-    holder.add(mesh);
-    turret.add(holder);
-    barrels.push({ holder, mesh, baseZ, spec: b, recoil: 0 });
-  }
-
-  // раструб пулемётных веток
-  for (const br of barrels) {
-    if (br.spec.w >= 1.15) {
-      const cone = new THREE.Mesh(
-        new THREE.CylinderGeometry(br.spec.w * 0.34, br.spec.w * 0.22, 0.5, 10),
-        stdMat(colors.body)
-      );
-      cone.rotation.x = Math.PI / 2;
-      cone.position.z = br.baseZ + 2.1 * br.spec.l / 2 - 0.1;
-      cone.position.y = 0.42;
-      br.holder.add(cone);
-    }
-  }
 
   return { group, turret, barrels, colors };
 }
