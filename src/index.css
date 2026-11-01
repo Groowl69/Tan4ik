@@ -546,3 +546,23 @@ button { font-family: inherit; cursor: pointer; }
 /* Во время прицеливания указатель скрыт; Ctrl временно возвращает системный курсор. */
 html.aim-active #game-canvas { cursor: none; }
 html.cursor-free #game-canvas { cursor: default; }
+
+
+/* Главное меню смещено левее; кнопка настроек расположена под стартом. */
+#screen-start .start-grid { margin-left: -12vw; }
+#screen-start .start-main { padding-left: 0; }
+#screen-start .start-settings { width: auto; min-width: 300px; margin-top: 9px; text-align: center; }
+
+/* Косметические настройки танка. */
+.customize-card { width: min(620px, 94vw); }
+.custom-row { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.custom-label { color: var(--text-dim); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+.custom-carousel { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.custom-carousel span { flex: 1; text-align: center; color: var(--amber); font-family: var(--font-d); font-size: 19px; letter-spacing: .06em; }
+.custom-arrow { width: 48px; font-size: 24px; padding: 5px; }
+.paint-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.paint-swatch { width: 38px; height: 38px; border: 2px solid var(--line); border-radius: 5px; cursor: pointer; }
+.paint-swatch.selected { outline: 3px solid var(--amber); outline-offset: 3px; }
+@media (max-width: 900px) {
+  #screen-start .start-grid { margin-left: 0; }
+}
