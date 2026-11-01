@@ -494,6 +494,7 @@ function frame(t) {
             // победа
             G.state = 'win';
             document.documentElement.classList.remove('aim-active');
+            try { localStorage.setItem('steel-campaign-complete', '1'); } catch (e) { /* storage may be unavailable */ }
             S.win();
             saveBest();
             if (document.pointerLockElement) document.exitPointerLock();
@@ -592,6 +593,7 @@ export function startGame(canvas) {
       if (G.state === 'paused') resumeGame();
     },
     updateSensitivity: (sens) => { input.sensitivity = sens; },
+    applyCustomization: () => { applyClass(playerRef.classId, true); },
   });
 
   // режим меню: танк в центре, фигуры бродят
