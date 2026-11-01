@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  // GitHub Pages serves this repository from /Tan4ik/, not from the domain root.
+  base: "/Tan4ik/",
   plugins: [react(), tailwindcss()],
   server: {
     host: "0.0.0.0",
