@@ -15,10 +15,34 @@ import { S, initAudio } from './audio.js';
 let started = false;
 
 function lockPointer() {
+  const canvas = W.renderer?.domElement;
+  if (!canvas || document.pointerLockElement === canvas || input.ctrlFree) return;
   try {
-    const p = W.renderer.domElement.requestPointerLock();
-    if (p && p.catch) p.catch(() => { /* работает фолбэк: прицел зажатой мышью */ });
-  } catch (err) { /* фолбэк: прицел зажатой мышью */ }
+    const request = canvas.requestPointerLock();
+    if (request && request.catch) request.catch(() => { /* остаётся управление по координатам курсора */ });
+  } catch (err) { /* остаётся управление по координатам курсора */ }
+}
+
+function resetAimAnchor() {
+  const canvas = W.renderer?.domElement;
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  if (!Number.isFinite(input.cursorX)) input.cursorX = centerX;
+  if (!Number.isFinite(input.cursorY)) input.cursorY = centerY;
+  input.aimAnchorX = input.cursorX;
+  input.aimAnchorY = input.cursorY;
+  input.aimAnchorYaw = input.yaw;
+  input.aimAnchorPitch = input.pitch;
+}
+
+function enterStory(chapter, onDone) {
+  G.state = 'story';
+  if (document.pointerLockElement) document.exitPointerLock();
+  W.camera.position.set(playerRef.x, 2.5, playerRef.z);
+  W.camera.rotation.set(input.pitch, input.yaw + Math.PI, 0);
+  showStory(chapter, onDone);
 }
 
 const G = {
@@ -27,20 +51,33 @@ const G = {
   spawnQueue: [], spawnT: 0,
   score: 0, kills: 0, playTime: 0,
   shake: 0, menuT: 0, pendingBoss: null, transT: 0,
-  freeT: 0, endlessLvl: 0,
+  freeT: 0, endlessLvl: 0, evolutionTier: 0,
 };
 
 const input = {
   keys: {}, yaw: 0, pitch: -0.06,
   firing: false, placing: false, boost: false,
-  mouseHeld: false, mx: 0, mz: 0,
+  ctrlFree: false, cursorX: null, cursorY: null,
+  aimAnchorX: null, aimAnchorY: null, aimAnchorYaw: 0, aimAnchorPitch: -0.06,
+  mx: 0, mz: 0,
   sensitivity: 0.0022,
 };
 
 // ---------- ввод ----------
 function bindInput(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  input.cursorX = rect.left + rect.width / 2;
+  input.cursorY = rect.top + rect.height / 2;
+  resetAimAnchor();
+
   window.addEventListener('keydown', (e) => {
     input.keys[e.code] = true;
+    if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && !input.ctrlFree) {
+      input.ctrlFree = true;
+      document.documentElement.classList.add('cursor-free');
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
+      else resetAimAnchor();
+    }
     if (e.code.startsWith('Digit')) {
       const n = parseInt(e.code.slice(5), 10);
       if (n >= 1 && n <= 7) tryUpgrade(n - 1);
@@ -51,46 +88,61 @@ function bindInput(canvas) {
     }
     if (e.code === 'Space') e.preventDefault();
   });
-  window.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
+  window.addEventListener('keyup', (e) => {
+    input.keys[e.code] = false;
+    if (e.code === 'ControlLeft' || e.code === 'ControlRight') {
+      input.ctrlFree = false;
+      document.documentElement.classList.remove('cursor-free');
+      resetAimAnchor();
+      if (G.state === 'playing' || G.state === 'free') lockPointer();
+    }
+  });
 
   canvas.addEventListener('mousedown', (e) => {
     initAudio();
     if (G.state !== 'playing' && G.state !== 'free') return;
     if (e.button === 0) {
       input.firing = true;
-      input.mouseHeld = true;
-      if (!document.pointerLockElement) lockPointer();
+      input.cursorX = e.clientX;
+      input.cursorY = e.clientY;
+      if (!input.ctrlFree && !document.pointerLockElement) {
+        resetAimAnchor();
+        lockPointer();
+      }
     }
     if (e.button === 2) input.placing = true;
   });
   window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) { input.firing = false; input.mouseHeld = false; }
+    if (e.button === 0) input.firing = false;
     if (e.button === 2) input.placing = false;
   });
   window.addEventListener('contextmenu', (e) => e.preventDefault());
 
   window.addEventListener('mousemove', (e) => {
-    const locked = document.pointerLockElement === canvas;
-    if (locked || input.mouseHeld) {
+    input.cursorX = e.clientX;
+    input.cursorY = e.clientY;
+    if ((G.state !== 'playing' && G.state !== 'free') || input.ctrlFree) return;
+
+    if (document.pointerLockElement === canvas) {
       input.yaw -= (e.movementX || 0) * input.sensitivity;
       input.pitch = clamp(input.pitch - (e.movementY || 0) * input.sensitivity, -0.5, 0.42);
     } else {
-      // Когда курсор не захвачен, поворачиваем танк за курсором мыши
-      const rect = canvas.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const targetYaw = Math.atan2(dx, dy);
-      const targetPitch = clamp(-dy / (rect.height / 2), -0.5, 0.42) * 0.5;
-      input.yaw += (targetYaw - input.yaw) * 0.15;
-      input.pitch += (targetPitch - input.pitch) * 0.15;
+      // Свободный курсор и Pointer Lock используют одинаковые направления и чувствительность.
+      if (!Number.isFinite(input.aimAnchorX) || !Number.isFinite(input.aimAnchorY)) resetAimAnchor();
+      const dx = e.clientX - input.aimAnchorX;
+      const dy = e.clientY - input.aimAnchorY;
+      input.yaw = input.aimAnchorYaw - dx * input.sensitivity;
+      input.pitch = clamp(input.aimAnchorPitch - dy * input.sensitivity, -0.5, 0.42);
     }
   });
 
   document.addEventListener('pointerlockchange', () => {
-    // Не ставим на паузу при выходе из pointer lock, если мы в игре
-    // Пауза теперь только по Esc/P
+    if (document.pointerLockElement !== canvas) {
+      const bounds = canvas.getBoundingClientRect();
+      input.cursorX = bounds.left + bounds.width / 2;
+      input.cursorY = bounds.top + bounds.height / 2;
+      resetAimAnchor();
+    }
   });
 
   input.boostRef = () => input.keys['ShiftLeft'] || input.keys['ShiftRight'];
@@ -122,6 +174,8 @@ function exitToMenu() {
   playerRef.x = 0; playerRef.z = 30;
   playerRef.mesh.position.set(0, 0, 30);
   input.yaw = 0; input.pitch = -0.06;
+  input.ctrlFree = false;
+  document.documentElement.classList.remove('cursor-free');
   if (document.pointerLockElement) document.exitPointerLock();
   hideAllScreens();
   showHUD(false);
@@ -134,17 +188,18 @@ function startCampaign() {
   G.chapterIdx = 0; G.waveIdx = 0;
   G.score = 0; G.kills = 0; G.playTime = 0;
   G.pendingBoss = null; G.bossDown = false; G.transT = 0;
-  G.freeT = 3; G.endlessLvl = 0;
+  G.freeT = 3; G.endlessLvl = 0; G.evolutionTier = 0;
   input.yaw = 0; input.pitch = -0.06;
   hideAllScreens();
   showHUD(true);
-  G.state = 'story';
-  showStory(CHAPTERS[0], () => beginChapter());
+  enterStory(CHAPTERS[0], () => beginChapter());
 }
 
 function beginChapter() {
   G.waveIdx = 0;
   G.state = 'playing';
+  resetAimAnchor();
+  lockPointer();
   notify(`${CHAPTERS[G.chapterIdx].tag}: ${CHAPTERS[G.chapterIdx].title}`, 'chapter');
   startWave();
 }
@@ -211,13 +266,13 @@ const ctx = {
   },
   onLevelUp(level) {
     notify(`Уровень ${level}! +1 очко системы`, 'level');
-    if (level === 15) {
-      notify('Доступна эволюция танка — откройте меню (Esc)', 'good');
-      G.tier2Ready = true;
+    if (level === 15 && getClassById(playerRef.classId).tier === 1) {
+      G.evolutionTier = 2;
+      notify('Доступна эволюция танка — кнопка на игровом экране', 'good');
     }
     if (level === 30 && getClassById(playerRef.classId).tier === 2) {
-      notify('Доступна эволюция 3-го тира!', 'good');
-      G.tier3Ready = true;
+      G.evolutionTier = 3;
+      notify('Доступна эволюция 3-го тира — кнопка на игровом экране', 'good');
     }
   },
   bossPhase(n) {
@@ -332,12 +387,19 @@ function offerClassChoice(forceTier = null) {
     const chosen = getClassById(id);
     notify(`Класс: ${chosen.name}`, 'good');
     if (lvl >= 30 && chosen.tier === 2 && getChildren(id).length) {
+      G.evolutionTier = 3;
       offerClassChoice(3);
     } else {
+      G.evolutionTier = 0;
       G.state = wasState === 'paused' ? 'playing' : wasState;
       if (G.state === 'playing' || G.state === 'free') lockPointer();
     }
   });
+}
+
+function openEvolution() {
+  if (!G.evolutionTier) return;
+  offerClassChoice(G.evolutionTier === 3 ? 3 : null);
 }
 
 // ---------- главный цикл ----------
@@ -401,8 +463,7 @@ function frame(t) {
             showWin(buildStats());
           } else {
             G.chapterIdx++;
-            G.state = 'story';
-            showStory(CHAPTERS[G.chapterIdx], () => beginChapter());
+            enterStory(CHAPTERS[G.chapterIdx], () => beginChapter());
           }
         }
       }
@@ -432,14 +493,10 @@ function frame(t) {
     } else {
       W.camera.rotation.z = 0;
     }
-  } else if (G.state === 'story') {
-    updateParticles(dt);
-    // лёгкое дыхание камеры
-    W.camera.position.set(playerRef.x, 2.5 + Math.sin(performance.now() / 900) * 0.05, playerRef.z);
-    W.camera.rotation.set(input.pitch, input.yaw + Math.PI, 0);
   }
 
-  renderWorld(dt);
+  // В кат-сцене не анимируем ни камеру, ни атмосферную пыль.
+  renderWorld(G.state === 'story' ? 0 : dt);
   requestAnimationFrame(frame);
 }
 
@@ -456,6 +513,7 @@ function hudState() {
     className: getClassById(playerRef.classId).name,
     score: G.score, kills: G.kills,
     chapterLabel, waveLabel,
+    evolutionTier: G.evolutionTier,
   };
 }
 
@@ -474,14 +532,15 @@ export function startGame(canvas) {
     storyNext: () => storyNext(),
     resume: resumeGame,
     restart: () => { hideAllScreens(); startCampaign(); },
-    reclass: () => offerClassChoice(),
+    evolve: openEvolution,
     freeplay: () => {
       hideAllScreens();
       showHUD(true);
       G.state = 'free';
       G.endlessLvl = 0;
-      notify('Свободная игра: волны без конца', 'chapter');
+      resetAimAnchor();
       lockPointer();
+      notify('Свободная игра: волны без конца', 'chapter');
     },
     upgrade: (key) => { upgradeStat(key); },
     pauseToggle: () => { if (G.state === 'paused') resumeGame(); else pauseGame(); },
