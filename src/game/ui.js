@@ -4,6 +4,7 @@
 import { STATS, MAX_STAT, CHAPTERS, xpNeed } from './config.js';
 import { tankSVG } from './tanks.js';
 import { toggleMute, isMuted, S, initAudio, setSfxVolume } from './audio.js';
+import { BODY_STYLES, BARREL_STYLES, PAINTS, getCustomization, saveCustomization, campaignComplete } from './customization.js';
 
 const $ = (id) => document.getElementById(id);
 const el = {};
@@ -20,7 +21,10 @@ export function initUI(h) {
     'xp-fill', 'level-text', 'stats-panel', 'stat-points', 'stats-rows',
     'minimap', 'crosshair', 'notify-stack', 'vignette', 'hit-flash',
     'boss-warning', 'boss-warning-name',
-    'screen-start', 'btn-start',
+    'screen-start', 'btn-start', 'btn-customize-open',
+    'screen-customize', 'body-prev', 'body-next', 'body-value',
+    'barrel-prev', 'barrel-next', 'barrel-value', 'paint-options',
+    'customize-back', 'customize-cancel',
     'screen-story', 'story-tag', 'story-title', 'story-text', 'btn-story-next',
     'screen-class', 'class-title', 'class-hint', 'class-grid',
     'screen-pause', 'btn-resume', 'btn-exit-menu', 'btn-settings-pause', 'btn-evolve',
@@ -34,6 +38,53 @@ export function initUI(h) {
   buildStatRows();
 
   el['btn-start'].onclick = () => { initAudio(); S.click(); handlers.start(); };
+  let cosmetic = getCustomization();
+  let customizationOrigin = 'menu';
+  const unlockedItems = (items) => items.filter(item => !item.unlock || campaignComplete());
+  const bodyItems = () => unlockedItems(BODY_STYLES);
+  const barrelItems = () => unlockedItems(BARREL_STYLES);
+  const paintItems = () => unlockedItems(PAINTS);
+  const renderCustomization = () => {
+    el['body-value'].textContent = bodyItems().find(x => x.id === cosmetic.body)?.name || 'Прямоугольник';
+    el['barrel-value'].textContent = barrelItems().find(x => x.id === cosmetic.barrel)?.name || 'Классический';
+    el['paint-options'].innerHTML = '';
+    paintItems().forEach(paint => {
+      const button = document.createElement('button');
+      button.className = 'paint-swatch' + (cosmetic.paint === paint.id ? ' selected' : '');
+      button.type = 'button';
+      button.title = paint.name;
+      button.style.background = paint.gradient
+        ? 'linear-gradient(90deg, #' + paint.gradient[0].toString(16).padStart(6,'0') + ', #' + paint.gradient[1].toString(16).padStart(6,'0') + ')'
+        : '#' + paint.color.toString(16).padStart(6,'0');
+      button.onclick = () => { cosmetic.paint = paint.id; renderCustomization(); };
+      el['paint-options'].appendChild(button);
+    });
+  };
+  const cycle = (key, delta, items) => {
+    const list = items();
+    const current = Math.max(0, list.findIndex(x => x.id === cosmetic[key]));
+    cosmetic[key] = list[(current + delta + list.length) % list.length].id;
+    renderCustomization();
+  };
+  el['btn-customize-open'].onclick = () => {
+    S.click(); customizationOrigin = 'menu'; cosmetic = getCustomization();
+    renderCustomization(); hideAllScreens(); showScreen('screen-customize');
+  };
+  el['body-prev'].onclick = () => cycle('body', -1, bodyItems);
+  el['body-next'].onclick = () => cycle('body', 1, bodyItems);
+  el['barrel-prev'].onclick = () => cycle('barrel', -1, barrelItems);
+  el['barrel-next'].onclick = () => cycle('barrel', 1, barrelItems);
+  const closeCustomization = (save) => {
+    if (save) {
+      cosmetic = saveCustomization(cosmetic);
+      if (handlers.applyCustomization) handlers.applyCustomization();
+    }
+    hideScreen('screen-customize');
+    if (customizationOrigin === 'pause') showScreen('screen-pause');
+    else showScreen('screen-start');
+  };
+  el['customize-back'].onclick = () => { S.click(); closeCustomization(true); };
+  el['customize-cancel'].onclick = () => { S.click(); closeCustomization(false); };
   el['btn-story-next'].onclick = () => { S.click(); handlers.storyNext(); };
   el['btn-resume'].onclick = () => { S.click(); handlers.resume(); };
   el['btn-settings-pause'].onclick = () => { S.click(); handlers.showSettings(true); };
