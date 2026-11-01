@@ -56,7 +56,7 @@ export function initWorld(canvas) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   // свет
   const hemi = new THREE.HemisphereLight(0xa8c0e8, 0x2a3244, 1.05);
