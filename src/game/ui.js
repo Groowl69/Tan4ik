@@ -23,7 +23,7 @@ export function initUI(h) {
     'screen-start', 'btn-start',
     'screen-story', 'story-tag', 'story-title', 'story-text', 'btn-story-next',
     'screen-class', 'class-title', 'class-hint', 'class-grid',
-    'screen-pause', 'btn-resume', 'btn-restart-pause', 'btn-reclass', 'pause-mute', 'btn-exit-menu', 'btn-settings-pause',
+    'screen-pause', 'btn-resume', 'btn-exit-menu', 'btn-settings-pause', 'btn-evolve',
     'screen-settings', 'settings-music', 'settings-sfx', 'settings-sens', 'settings-save', 'settings-close',
     'screen-over', 'over-stats', 'btn-restart',
     'screen-win', 'win-stats', 'btn-freeplay', 'btn-restart-win',
@@ -37,14 +37,13 @@ export function initUI(h) {
   el['btn-story-next'].onclick = () => { S.click(); handlers.storyNext(); };
   el['btn-resume'].onclick = () => { S.click(); handlers.resume(); };
   el['btn-settings-pause'].onclick = () => { S.click(); handlers.showSettings(true); };
-  el['btn-restart-pause'].onclick = () => { S.click(); handlers.restart(); };
-  el['btn-reclass'].onclick = () => { S.click(); handlers.reclass(); };
+  el['btn-evolve'].onclick = () => { S.click(); handlers.evolve(); };
   el['btn-restart'].onclick = () => { S.click(); handlers.restart(); };
   el['btn-restart-win'].onclick = () => { S.click(); handlers.restart(); };
   el['btn-freeplay'].onclick = () => { S.click(); handlers.freeplay(); };
   el['btn-mute'].onclick = () => { initAudio(); toggleMute(); syncMute(); S.click(); };
   el['btn-pause-hud'].onclick = () => { S.click(); handlers.pauseToggle(); };
-  el['pause-mute'].onclick = () => { initAudio(); toggleMute(); syncMute(); };
+
   el['btn-exit-menu'].onclick = () => { S.click(); handlers.exitToMenu(); };
   el['settings-save'].onclick = () => { saveSettings(); S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
   el['settings-close'].onclick = () => { S.click(); hideScreen('screen-settings'); if (handlers.resumeFromSettings) handlers.resumeFromSettings(); };
@@ -55,7 +54,7 @@ export function initUI(h) {
 function syncMute() {
   const m = isMuted();
   el['btn-mute'].textContent = m ? 'Звук: выкл' : 'Звук: вкл';
-  el['pause-mute'].textContent = m ? 'Включить звук' : 'Выключить звук';
+
 }
 
 // ---------- настройки ----------
@@ -147,6 +146,10 @@ export function updateHUD(P, game) {
   el['level-text'].textContent = `Уровень ${P.level}`;
   el['level-badge'].textContent = P.level;
   el['class-name'].textContent = game.className;
+  if (el['btn-evolve']) {
+    el['btn-evolve'].style.display = game.evolutionTier ? 'inline-block' : 'none';
+    el['btn-evolve'].textContent = game.evolutionTier === 3 ? 'Эволюция · тир 3' : 'Эволюция танка';
+  }
 
   el['score-val'].textContent = game.score.toLocaleString('ru-RU');
   el['kills-val'].textContent = game.kills;
