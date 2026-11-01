@@ -248,7 +248,7 @@ export function notify(msg, type = 'info') {
 
 // ---------- экраны ----------
 export function hideAllScreens() {
-  ['screen-start', 'screen-story', 'screen-class', 'screen-pause', 'screen-over', 'screen-win', 'screen-settings'].forEach((id) => el[id].classList.remove('show'));
+  ['screen-start', 'screen-story', 'screen-class', 'screen-pause', 'screen-over', 'screen-win', 'screen-settings', 'screen-customize'].forEach((id) => el[id].classList.remove('show'));
 }
 export function hideScreen(id) { el[id].classList.remove('show'); }
 export function showScreen(id) { el[id].classList.add('show'); }
