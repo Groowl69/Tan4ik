@@ -59,15 +59,13 @@ function makeBarrelAdornment(style, radius, length, paintId, colors) {
     fracture.rotation.z = 0.45;
     adornment.add(fracture);
   } else if (style === 'alpha') {
-    // Ретро-конфигурация: видимая пара стволов, расположенная рядом.
-    for (const side of [-1, 1]) {
-      const twin = new THREE.Mesh(
-        barrelGeo(radius * 0.58, length * 0.92),
-        paintMat(colors.paint || { color: colors.body })
-      );
-      twin.position.set(side * radius * 1.12, 0, -length * 0.46);
-      adornment.add(twin);
-    }
+    // Ретро-конфигурация: основной подвижный ствол и один дополнительный фиксированный на башне.
+    const fixedTwin = new THREE.Mesh(
+      barrelGeo(radius * 0.62, length * 0.92),
+      paintMat(colors.paint || { color: colors.body })
+    );
+    fixedTwin.position.set(radius * 1.25, 0, -length * 0.46);
+    adornment.add(fixedTwin);
   } else if (style === 'beta') {
     for (let i = 0; i < 5; i++) {
       const ring = new THREE.Mesh(
