@@ -27,6 +27,82 @@ function stdMat(color, opts = {}) {
   });
 }
 
+function hullGeometry(style, size, height = 0.85) {
+  switch (style) {
+    case 'cylinder': return new THREE.CylinderGeometry(size * 0.5, size * 0.5, height, 32);
+    case 'triangle': return new THREE.CylinderGeometry(size * 0.58, size * 0.58, height, 3);
+    case 'hexagon': return new THREE.CylinderGeometry(size * 0.58, size * 0.58, height, 6);
+    case 'octagon': return new THREE.CylinderGeometry(size * 0.58, size * 0.58, height, 8);
+    case 'ring': {
+      const ring = new THREE.TorusGeometry(size * 0.42, size * 0.15, 12, 32);
+      ring.rotateX(Math.PI / 2);
+      return ring;
+    }
+    default: return new THREE.BoxGeometry(size, height, size);
+  }
+}
+
+function makeBarrelAdornment(style, radius, length, paintId, colors) {
+  const adornment = new THREE.Group();
+  if (style === 'broken') {
+    const jaggedMuzzle = new THREE.Mesh(
+      new THREE.TorusGeometry(radius * 0.94, 0.075, 6, 12, Math.PI * 1.72),
+      stdMat(0x17191d)
+    );
+    jaggedMuzzle.position.z = -length / 2;
+    adornment.add(jaggedMuzzle);
+    const fracture = new THREE.Mesh(
+      new THREE.BoxGeometry(radius * 0.16, radius * 1.6, 0.09),
+      stdMat(0x17191d)
+    );
+    fracture.position.set(radius * 0.6, 0, -length * 0.36);
+    fracture.rotation.z = 0.45;
+    adornment.add(fracture);
+  } else if (style === 'alpha') {
+    // Ретро-конфигурация: видимая пара стволов, расположенная рядом.
+    for (const side of [-1, 1]) {
+      const twin = new THREE.Mesh(
+        barrelGeo(radius * 0.58, length * 0.92),
+        paintMat(colors.paint || { color: colors.body })
+      );
+      twin.position.set(side * radius * 1.12, 0, -length * 0.46);
+      adornment.add(twin);
+    }
+  } else if (style === 'beta') {
+    for (let i = 0; i < 5; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius * 1.08, radius * 0.92, Math.max(0.14, length * 0.1), 12),
+        stdMat(colors.turret)
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.z = -length * (0.08 + i * 0.21);
+      adornment.add(ring);
+    }
+  } else if (style === 'gamma') {
+    const badge = new THREE.Group();
+    const backgroundColor = paintId === 'black' ? 0xffffff : 0x141414;
+    const sign = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * 1.65, 24),
+      stdMat(backgroundColor, { side: THREE.DoubleSide })
+    );
+    badge.add(sign);
+    const symbolColor = paintId === 'black' ? 0x141414 : 0xf5df35;
+    for (let i = 0; i < 3; i++) {
+      const wedge = new THREE.Mesh(
+        new THREE.ConeGeometry(radius * 0.42, radius * 0.86, 3),
+        stdMat(symbolColor)
+      );
+      const angle = i * Math.PI * 2 / 3;
+      wedge.position.set(Math.cos(angle) * radius * 0.7, Math.sin(angle) * radius * 0.7, 0.025);
+      wedge.rotation.z = angle;
+      badge.add(wedge);
+    }
+    badge.position.set(radius * 0.12, radius * 0.9, -length * 0.48);
+    adornment.add(badge);
+  }
+  return adornment;
+}
+
 function paintMat(paint, opts = {}) {
   const material = stdMat(paint.gradient ? 0xffffff : paint.color, opts);
   if (paint.gradient) {
@@ -55,17 +131,7 @@ export function buildTankMesh(cls, tierOverride = null, customization = getCusto
 
   // корпус
   const bodySize = cls.special === 'melee' ? 2.5 : cls.id === 'heavy' || cls.id === 'juggernaut' ? 2.45 : 2.2;
-  const bodyGeometry = customization.body === 'cylinder'
-    ? new THREE.CylinderGeometry(bodySize * 0.5, bodySize * 0.5, 0.85, 32)
-    : customization.body === 'triangle'
-      ? new THREE.CylinderGeometry(bodySize * 0.58, bodySize * 0.58, 0.85, 3)
-      : customization.body === 'hexagon'
-        ? new THREE.CylinderGeometry(bodySize * 0.58, bodySize * 0.58, 0.85, 6)
-        : customization.body === 'octagon'
-          ? new THREE.CylinderGeometry(bodySize * 0.58, bodySize * 0.58, 0.85, 8)
-          : customization.body === 'ring'
-            ? new THREE.TorusGeometry(bodySize * 0.42, bodySize * 0.15, 12, 32)
-            : new THREE.BoxGeometry(bodySize, 0.85, bodySize);
+  const bodyGeometry = hullGeometry(customization.body, bodySize);
   const body = new THREE.Mesh(bodyGeometry, paintMat(paint));
   body.position.y = 0.55;
   body.castShadow = true;
@@ -78,17 +144,7 @@ export function buildTankMesh(cls, tierOverride = null, customization = getCusto
   plate.position.y = 1.02;
   if (customization.body !== 'rectangle') {
     plate.geometry.dispose();
-    plate.geometry = customization.body === 'cylinder'
-      ? new THREE.CylinderGeometry(bodySize * 0.38, bodySize * 0.38, 0.14, 32)
-      : customization.body === 'triangle'
-        ? new THREE.CylinderGeometry(bodySize * 0.42, bodySize * 0.42, 0.14, 3)
-        : customization.body === 'hexagon'
-          ? new THREE.CylinderGeometry(bodySize * 0.42, bodySize * 0.42, 0.14, 6)
-          : customization.body === 'octagon'
-            ? new THREE.CylinderGeometry(bodySize * 0.42, bodySize * 0.42, 0.14, 8)
-            : customization.body === 'ring'
-              ? new THREE.TorusGeometry(bodySize * 0.3, 0.08, 8, 28)
-              : plate.geometry;
+    plate.geometry = hullGeometry(customization.body, bodySize * 0.8, 0.14);
   }
   group.add(plate);
 
@@ -129,56 +185,80 @@ export function buildTankMesh(cls, tierOverride = null, customization = getCusto
 // --- Вид от первого лица: стволы, прикреплённые к камере
 export function buildViewModel(cls, customization = getCustomization()) {
   const paint = getPaint(customization.paint);
-  const colors = { body: paint.color, turret: paint.color, accent: '#' + paint.color.toString(16).padStart(6, '0') };
+  const colors = {
+    body: paint.color,
+    turret: paint.color,
+    accent: '#' + paint.color.toString(16).padStart(6, '0'),
+    paint,
+  };
   const vm = new THREE.Group();
   const barrels = [];
-  for (const b of cls.barrels) {
-    const radius = Math.min(0.5, 0.24 * b.w);
-    const len = 2.6 * b.l * (customization.barrel === 'short' ? 0.6 : 1);
-    const mesh = new THREE.Mesh(barrelGeo(radius, len), paintMat(paint, { roughness: 0.45 }));
-    const baseZ = -len / 2 - 0.1;
-    if (customization.barrel === 'broken') {
-      const fracture = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.88, 0.045, 5, 10), stdMat(0x17191d));
-      fracture.position.z = -len;
-      mesh.add(fracture);
-    }
-    if (customization.barrel === 'beta') {
-      const segments = new THREE.Group();
-      for (let j = 0; j < 4; j++) {
-        const ring = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.9, radius, len * 0.12, 10), stdMat(colors.turret));
-        ring.rotation.x = Math.PI / 2;
-        ring.position.z = -len * (0.12 + j * 0.24);
-        segments.add(ring);
-      }
-      mesh.visible = false;
-      vm.add(segments);
-    }
-    if (customization.barrel === 'gamma') {
-      const hazard = new THREE.Group();
-      const signColor = customization.paint === 'black' ? 0xffffff : 0x111111;
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(radius * 1.8, 24), stdMat(signColor));
-      disc.position.z = -len * 0.45;
-      hazard.add(disc);
-      for (let j = 0; j < 3; j++) {
-        const wedge = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.48, radius * 0.9, 3), stdMat(0xf5df35));
-        wedge.rotation.z = j * Math.PI * 2 / 3;
-        wedge.position.set(Math.cos(j * Math.PI * 2 / 3) * radius * 0.75, Math.sin(j * Math.PI * 2 / 3) * radius * 0.75, -len * 0.45);
-        hazard.add(wedge);
-      }
-      vm.add(hazard);
-    }
-    if (customization.barrel === 'alpha') {
-      const collar = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.22, radius * 1.22, 0.12, 12), stdMat(colors.turret));
-      collar.rotation.x = Math.PI / 2;
-      collar.position.z = -len * 0.9;
-      vm.add(collar);
-    }
-    mesh.position.set((b.off || 0) * 0.9, 0, baseZ);
+
+  // Видимый капот/корпус танка: мировая модель находится за камерой,
+  // поэтому для вида от первого лица нужна отдельная передняя секция корпуса.
+  const bodySize = cls.special === 'melee' ? 2.5 : cls.id === 'heavy' || cls.id === 'juggernaut' ? 2.45 : 2.2;
+  const hull = new THREE.Group();
+  hull.position.set(0, 0.4, -1.05);
+  const hullMesh = new THREE.Mesh(hullGeometry(customization.body, bodySize * 0.78, 0.48), paintMat(paint));
+  hullMesh.castShadow = true;
+  hull.add(hullMesh);
+
+  const topPlate = new THREE.Mesh(
+    hullGeometry(customization.body, bodySize * 0.55, 0.14),
+    paintMat(paint, { metalness: 0.55 })
+  );
+  topPlate.position.y = 0.29;
+  hull.add(topPlate);
+
+  // Низкие боковые секции подчёркивают габарит и форму выбранного корпуса.
+  for (const side of [-1, 1]) {
+    const track = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.32, 1.42),
+      stdMat(0x252b35, { roughness: 0.82, metalness: 0.18 })
+    );
+    track.position.set(side * bodySize * 0.43, -0.08, 0.02);
+    hull.add(track);
+  }
+  const turretBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(bodySize * 0.22, bodySize * 0.28, 0.24, customization.body === 'triangle' ? 3 : customization.body === 'hexagon' ? 6 : 12),
+    paintMat(paint)
+  );
+  turretBase.position.set(0, 0.34, -0.05);
+  hull.add(turretBase);
+  vm.add(hull);
+
+  for (const spec of cls.barrels) {
+    const radius = Math.min(0.5, 0.24 * spec.w);
+    const length = 2.6 * spec.l * (customization.barrel === 'short' ? 0.6 : 1);
     const holder = new THREE.Group();
-    holder.rotation.y = -THREE.MathUtils.degToRad(b.a) * 0.55; // лёгкое схождение
+    holder.position.set((spec.off || 0) * 0.9, 0.82, 0);
+    holder.rotation.y = -THREE.MathUtils.degToRad(spec.a) * 0.55;
+
+    const mesh = new THREE.Mesh(
+      barrelGeo(radius, length),
+      paintMat(paint, { roughness: 0.45 })
+    );
+    const baseZ = -length / 2 - 0.1;
+    mesh.position.set(0, 0, baseZ);
     holder.add(mesh);
+
+    if (customization.barrel !== 'classic' && customization.barrel !== 'short') {
+      holder.add(makeBarrelAdornment(customization.barrel, radius, length, customization.paint, colors));
+    }
+
+    // У раструбных стволов сохраняется визуальный раструб, но форма остаётся косметической.
+    if (spec.w >= 1.15) {
+      const muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius * 1.22, radius * 1.05, 0.22, 12),
+        paintMat(paint)
+      );
+      muzzle.rotation.x = Math.PI / 2;
+      muzzle.position.z = -length + 0.08;
+      holder.add(muzzle);
+    }
+
     vm.add(holder);
-    barrels.push({ holder, mesh, baseZ, spec: b, recoil: 0 });
+    barrels.push({ holder, mesh, baseZ, spec, recoil: 0 });
   }
   vm.position.set(0, -1.15, -0.55);
   return { vm, barrels };
