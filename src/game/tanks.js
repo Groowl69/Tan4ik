@@ -49,7 +49,7 @@ function makeBarrelAdornment(style, radius, length, paintId, colors) {
       new THREE.TorusGeometry(radius * 0.94, 0.075, 6, 12, Math.PI * 1.72),
       stdMat(0x17191d)
     );
-    jaggedMuzzle.position.z = -length / 2;
+    jaggedMuzzle.position.z = -length - 0.08;
     adornment.add(jaggedMuzzle);
     const fracture = new THREE.Mesh(
       new THREE.BoxGeometry(radius * 0.16, radius * 1.6, 0.09),
