@@ -90,12 +90,9 @@ function bindInput(canvas) {
     if (e.code === 'KeyP' || e.code === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
+      if (e.repeat) return;
       if (G.state === 'playing' || G.state === 'free') {
         pauseGame();
-        // Escape не должен сначала только закрывать fullscreen, оставляя игру активной.
-        if (e.code === 'Escape' && document.fullscreenElement) {
-          document.exitFullscreen?.().catch?.(() => {});
-        }
       } else if (G.state === 'paused') {
         resumeGame();
       }
@@ -161,11 +158,17 @@ function bindInput(canvas) {
   });
 
   document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement !== canvas) {
-      if (Number.isFinite(input.lockExitX)) input.cursorX = input.lockExitX;
-      if (Number.isFinite(input.lockExitY)) input.cursorY = input.lockExitY;
-      resetAimAnchor();
+    if (document.pointerLockElement === canvas) return;
+
+    // Escape в браузере сначала снимает Pointer Lock и может не доходить
+    // до keydown страницы. Потеря захвата во время боя означает паузу.
+    if ((G.state === 'playing' || G.state === 'free') && !input.ctrlFree) {
+      pauseGame();
     }
+
+    if (Number.isFinite(input.lockExitX)) input.cursorX = input.lockExitX;
+    if (Number.isFinite(input.lockExitY)) input.cursorY = input.lockExitY;
+    resetAimAnchor();
   });
 
   input.boostRef = () => input.keys['ShiftLeft'] || input.keys['ShiftRight'];
